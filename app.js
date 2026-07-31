@@ -1,10 +1,6 @@
 if(process.env.NODE_ENV != "production") {
-   require('dotenv').config();
-
+    require('dotenv').config();
 }
-
-
-
 
 const express = require("express");
 const app = express();
@@ -20,22 +16,19 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const User = require("./models/user.js"); 
 
-
 const listingRouter = require("./routes/listing.js");
 const reviewRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
 
-
-
-
 const dbUrl = process.env.ATLASDB_URL;
 
 main().then(() => {
-    console.log("connected to DB");
+    console.log("Connected to DB successfully!");
 })
 .catch((err) => {
-    console.log("err");
+    console.log("DB Connection Error:", err);
 });
+
 async function main() {
     await mongoose.connect(dbUrl);
 }
@@ -47,7 +40,7 @@ app.use(methodOverride("_method"));
 app.engine('ejs', ejsMate);
 app.use(express.static(path.join(__dirname, "/public")));
 
-
+// Mongo Session Store Setup
 const store = MongoStore.create({
     mongoUrl: dbUrl,
     crypto: {
@@ -56,22 +49,22 @@ const store = MongoStore.create({
     touchAfter: 24 * 3600,
 });
 
-store.on("error", () => {
+// FIX 1: Added (err) parameter to prevent crash
+store.on("error", (err) => {
     console.log("ERROR in MONGO SESSION STORE", err);
 });
 
 const sessionOptions = {
+    store: store, // FIX 2: Store ko session config mein add kiya
     secret: process.env.SECRET,
     resave: false,
     saveUninitialized: true,
     cookie: {
         expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
-        maxAge:  7 * 24 * 60 * 60 * 1000,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
         httpOnly: true,
     },
 };
-
-
 
 app.use(session(sessionOptions));
 app.use(flash());
@@ -90,32 +83,24 @@ app.use((req, res, next) => {
     next();
 });
 
-// app.get("/demouser", async(req, res) => {
-//     let fakeUser = new User({
-//         email: "student@gmail.com",
-//         username: "delta-student"
-//     });
-//     let registeredUser = await User.register(fakeUser, "helloworld");
-//     res.send(registeredUser);
-// });
-
-
+// Routes
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/", userRouter);
 
-
-
+// 404 Handler
 app.use((req, res, next) => {
     res.status(404).send("Page Not Found");
 });
 
+// Error Handling Middleware
 app.use((err, req, res, next) => {
-    let {statusCode=500, message = "something went wrong!"} = err;
-    res.status(statusCode).render("error.ejs", {message});
-    // res.status(statusCode).send(message);
+    let { statusCode = 500, message = "Something went wrong!" } = err;
+    res.status(statusCode).render("error.ejs", { message });
 });
 
-app.listen(8080 , () => {
-    console.log("lets go bro i am online 🤯");
+// FIX 3: Dynamic Port for Render Deployment
+const port = process.env.PORT || 8080;
+app.listen(port, () => {
+    console.log(`Server is running on port ${port} 🚀`);
 });
