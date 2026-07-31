@@ -10,7 +10,7 @@ const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 const ExpressError = require("./utils/ExpressError.js");
 const session = require("express-session");
-const MongoStore = require('connect-mongo');
+const MongoStore = require('connect-mongo'); // 👈 Sirf yahan EK BAAR require hoga
 const flash = require("connect-flash");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
@@ -41,27 +41,20 @@ app.engine('ejs', ejsMate);
 app.use(express.static(path.join(__dirname, "/public")));
 
 // Mongo Session Store Setup
-const MongoStore = require("connect-mongo");
-
-const store = MongoStore.create ? MongoStore.create({
+const store = MongoStore.create({
     mongoUrl: dbUrl,
     crypto: {
         secret: process.env.SECRET,
     },
     touchAfter: 24 * 3600,
-}) : new MongoStore({
-    mongooseConnection: mongoose.connection,
-    secret: process.env.SECRET,
-    touchAfter: 24 * 3600,
 });
 
-// FIX 1: Added (err) parameter to prevent crash
 store.on("error", (err) => {
     console.log("ERROR in MONGO SESSION STORE", err);
 });
 
 const sessionOptions = {
-    store: store, // FIX 2: Store ko session config mein add kiya
+    store: store,
     secret: process.env.SECRET,
     resave: false,
     saveUninitialized: true,
@@ -105,7 +98,7 @@ app.use((err, req, res, next) => {
     res.status(statusCode).render("error.ejs", { message });
 });
 
-// FIX 3: Dynamic Port for Render Deployment
+// Dynamic Port for Render Deployment
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
     console.log(`Server is running on port ${port} 🚀`);
