@@ -41,11 +41,17 @@ app.engine('ejs', ejsMate);
 app.use(express.static(path.join(__dirname, "/public")));
 
 // Mongo Session Store Setup
-const store = MongoStore.create({
+const MongoStore = require("connect-mongo");
+
+const store = MongoStore.create ? MongoStore.create({
     mongoUrl: dbUrl,
     crypto: {
         secret: process.env.SECRET,
     },
+    touchAfter: 24 * 3600,
+}) : new MongoStore({
+    mongooseConnection: mongoose.connection,
+    secret: process.env.SECRET,
     touchAfter: 24 * 3600,
 });
 
